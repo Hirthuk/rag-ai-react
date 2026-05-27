@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import axios from "axios"
 
-export default function ChatPanel({ setChartData, setChartType }) {
+export default function ChatPanel({ setChartData, setChartType, systemMessage }) {
 
     const [message, setMessage] = useState("")
     const [messages, setMessages] = useState([])
@@ -9,15 +9,15 @@ export default function ChatPanel({ setChartData, setChartType }) {
 
     const messagesEndRef = useRef(null)
 
-    useEffect(() => {
-        scrollToBottom()
-    }, [messages])
-
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({
             behavior: "smooth"
         })
     }
+
+    useEffect(() => {
+        scrollToBottom()
+    }, [messages])
 
     const sendMessage = async () => {
 
@@ -29,16 +29,24 @@ export default function ChatPanel({ setChartData, setChartType }) {
         }
 
         setMessages(prev => [...prev, userMessage])
-
         setLoading(true)
 
         try {
+            const requestBody = {
+                userMessage: message
+            }
 
-            const response = await axios.get(
+            if (systemMessage?.trim()) {
+                requestBody.systemMessage = systemMessage.trim()
+            }
+
+            // CHANGE FROM axios.get TO axios.post
+            const response = await axios.post(
                 "http://localhost:8080/api/chat",
+                requestBody,  // This is the body (2nd parameter for POST)
                 {
-                    params: {
-                        message: message
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
                 }
             )
@@ -50,18 +58,25 @@ export default function ChatPanel({ setChartData, setChartType }) {
 
             setMessages(prev => [...prev, aiMessage])
 
-            setChartData(response.data.chartData)
-            setChartType(response.data.chartType)
+            // Only update chart data if present in response
+            if (response.data.chartData) {
+                setChartData(response.data.chartData)
+            }
+            if (response.data.chartType) {
+                setChartType(response.data.chartType)
+            }
 
         } catch (error) {
-
-            console.error(error)
-
+            console.error("Error details:", error.response?.data || error.message)
+            
+            // Show more specific error message
+            const errorMessage = error.response?.data?.message || "Something went wrong."
+            
             setMessages(prev => [
                 ...prev,
                 {
                     sender: "ai",
-                    text: "Something went wrong."
+                    text: errorMessage
                 }
             ])
         }
@@ -71,7 +86,7 @@ export default function ChatPanel({ setChartData, setChartType }) {
     }
 
     return (
-        <div className="flex h-full flex-col rounded-[24px] border border-sky-100 bg-white/95 p-5 shadow-[0_24px_60px_-24px_rgba(14,165,233,0.18)]">
+        <div className="flex h-full flex-col rounded-3xl border border-sky-100 bg-white/95 p-5 shadow-[0_24px_60px_-24px_rgba(14,165,233,0.18)]">
             <div className="mb-4 flex items-center justify-between">
                 <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-600">
@@ -97,7 +112,7 @@ export default function ChatPanel({ setChartData, setChartType }) {
                         }`}
                     >
                         <div
-                            className={`max-w-[85%] rounded-[20px] px-4 py-3 text-sm leading-6 ${
+                            className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${
                                 msg.sender === "user"
                                     ? "bg-linear-to-r from-sky-500 to-cyan-500 text-white"
                                     : "border border-sky-100 bg-sky-50 text-slate-800"
@@ -110,7 +125,7 @@ export default function ChatPanel({ setChartData, setChartType }) {
 
                 {loading && (
                     <div className="flex justify-start">
-                        <div className="rounded-[20px] border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-slate-600">
+                        <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-slate-600">
                             AI is thinking...
                         </div>
                     </div>

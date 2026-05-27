@@ -28,7 +28,7 @@ export default function FinancialChart({
 
         <div className="w-full h-full">
 
-            <ResponsiveContainer width="100%" height={500}>
+            <ResponsiveContainer width="100%" height={320}>
 
                 {chartType === "bar" ? (
 

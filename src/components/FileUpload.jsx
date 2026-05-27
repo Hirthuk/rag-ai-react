@@ -64,12 +64,30 @@ export default function FileUpload() {
         }
     };
 
+    // Helper function to get file icon based on type
+    const getFileIcon = (fileName, fileType) => {
+        if (fileType?.startsWith("image/")) return "🖼️";
+        if (fileName?.endsWith(".pdf")) return "📄";
+        if (fileName?.endsWith(".csv")) return "📊";
+        if (fileName?.endsWith(".xlsx") || fileName?.endsWith(".xls")) return "📈";
+        if (fileName?.endsWith(".doc") || fileName?.endsWith(".docx")) return "📝";
+        if (fileName?.endsWith(".txt")) return "📃";
+        return "📎";
+    };
+
     const statusTone =
         status.includes("✅")
             ? "border-emerald-200 bg-emerald-50 text-emerald-700"
             : status.includes("❌")
                 ? "border-rose-200 bg-rose-50 text-rose-700"
                 : "border-sky-200 bg-sky-50 text-sky-700";
+
+    // List of supported file types for display
+    const supportedFormats = [
+        "PDF", "DOC", "DOCX", "TXT", 
+        "CSV", "XLS", "XLSX", 
+        "JPG", "PNG", "GIF", "WEBP"
+    ];
 
     return (
         <section className="rounded-[24px] border border-sky-100 bg-white/95 p-5 shadow-[0_24px_60px_-24px_rgba(14,165,233,0.22)] backdrop-blur-sm">
@@ -103,10 +121,17 @@ export default function FileUpload() {
 
                 {selectedFile && !uploading && (
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                        <p className="text-sm font-semibold text-slate-900">{selectedFile.name}</p>
-                        <div className="mt-2 flex flex-wrap gap-3 text-sm text-slate-600">
-                            <span>{(selectedFile.size / 1024).toFixed(2)} KB</span>
-                            <span>{selectedFile.type || "Unknown type"}</span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">
+                                {getFileIcon(selectedFile.name, selectedFile.type)}
+                            </span>
+                            <div className="flex-1">
+                                <p className="text-sm font-semibold text-slate-900">{selectedFile.name}</p>
+                                <div className="mt-2 flex flex-wrap gap-3 text-sm text-slate-600">
+                                    <span>{(selectedFile.size / 1024).toFixed(2)} KB</span>
+                                    <span>{selectedFile.type || "Unknown type"}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -125,9 +150,13 @@ export default function FileUpload() {
                 >
                     {uploading ? "Uploading..." : "Choose file"}
                 </button>
-                <span className="text-sm text-slate-500">
-                    Supported: PDF, DOC, DOCX, TXT, JPG, PNG, GIF, WEBP
-                </span>
+                <div className="flex flex-wrap gap-2">
+                    {supportedFormats.map(format => (
+                        <span key={format} className="text-xs bg-slate-100 px-2 py-1 rounded-full text-slate-600">
+                            {format}
+                        </span>
+                    ))}
+                </div>
             </div>
 
             <input
@@ -135,7 +164,7 @@ export default function FileUpload() {
                 type="file"
                 onChange={handleFileSelect}
                 className="hidden"
-                accept=".pdf,.doc,.docx,.txt,image/jpeg,image/png,image/gif,image/webp"
+                accept=".pdf,.doc,.docx,.txt,image/jpeg,image/png,image/gif,image/webp,.csv,.xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
             />
 
             {status && (
