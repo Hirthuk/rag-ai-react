@@ -134,13 +134,6 @@ export default function Dashboard() {
                     Financial performance overview
                   </h2>
                 </div>
-                <div className="rounded-full bg-slate-50 px-3 py-1 text-sm text-slate-600">
-                  {chartType === "bar"
-                    ? "Bar chart"
-                    : chartType === "line"
-                      ? "Line chart"
-                      : "No chart"}
-                </div>
               </div>
               <div style={{ flex: 1, minHeight: 0, width: "100%" }}>
                 <FinancialChart chartData={chartData} chartType={chartType} />
