@@ -1,74 +1,49 @@
 import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    Tooltip,
-    CartesianGrid,
-    ResponsiveContainer,
-    BarChart,
-    Bar
-} from "recharts"
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from "recharts";
 
-export default function FinancialChart({
-    chartData,
-    chartType
-}) {
+export default function FinancialChart({ chartData, chartType }) {
+  if (!chartData || chartData.length === 0) {
+    return <div className="text-gray-400">No chart data available</div>;
+  }
 
-    if (!chartData || chartData.length === 0) {
+  return (
+    <div className="w-full h-full">
+      <ResponsiveContainer width="100%" height={320}>
+        {chartType === "bar" ? (
+          <BarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
 
-        return (
-            <div className="text-gray-400">
-                No chart data available
-            </div>
-        )
-    }
+            <XAxis dataKey="year" />
 
-    return (
+            <YAxis />
 
-        <div className="w-full h-full">
+            <Tooltip />
 
-            <ResponsiveContainer width="100%" height={320}>
+            <Bar dataKey="value" />
+          </BarChart>
+        ) : (
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
 
-                {chartType === "bar" ? (
+            <XAxis dataKey="year" />
 
-                    <BarChart data={chartData}>
+            <YAxis />
 
-                        <CartesianGrid strokeDasharray="3 3" />
+            <Tooltip />
 
-                        <XAxis dataKey="year" />
-
-                        <YAxis />
-
-                        <Tooltip />
-
-                        <Bar dataKey="value" />
-
-                    </BarChart>
-
-                ) : (
-
-                    <LineChart data={chartData}>
-
-                        <CartesianGrid strokeDasharray="3 3" />
-
-                        <XAxis dataKey="year" />
-
-                        <YAxis />
-
-                        <Tooltip />
-
-                        <Line
-                            type="monotone"
-                            dataKey="value"
-                        />
-
-                    </LineChart>
-
-                )}
-
-            </ResponsiveContainer>
-
-        </div>
-    )
+            <Line type="monotone" dataKey="value" />
+          </LineChart>
+        )}
+      </ResponsiveContainer>
+    </div>
+  );
 }

@@ -28,3 +28,24 @@ input {
 #root {
   min-height: 100vh;
 }
+
+/* Recharts container fixes */
+.recharts-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.recharts-surface {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure chart containers don't collapse */
+[class*="recharts"] {
+  min-height: 300px;
+}
+
+/* Fix for ResponsiveContainer */
+.removed-scrollbar {
+  overflow: hidden !important;
+}

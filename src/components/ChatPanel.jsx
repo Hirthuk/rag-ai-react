@@ -6,7 +6,7 @@ export default function ChatPanel({ setChartData, setChartType, systemMessage })
     const [message, setMessage] = useState("")
     const [messages, setMessages] = useState([])
     const [loading, setLoading] = useState(false)
-
+    const [conversationId, setConversationId] = useState(localStorage.getItem("conversationId") || null);
     const messagesEndRef = useRef(null)
 
     const scrollToBottom = () => {
@@ -21,6 +21,11 @@ export default function ChatPanel({ setChartData, setChartType, systemMessage })
 
     const sendMessage = async () => {
 
+        if(!conversationId) {
+            const newConversationId = crypto.randomUUID()
+            localStorage.setItem("conversationId", newConversationId)
+            setConversationId(newConversationId)
+        }
         if (!message.trim()) return
 
         const userMessage = {
@@ -33,23 +38,27 @@ export default function ChatPanel({ setChartData, setChartType, systemMessage })
 
         try {
             const requestBody = {
-                userMessage: message
+                userMessage: message,
+                conversationId: localStorage.getItem("conversationId") || crypto.randomUUID()
             }
 
             if (systemMessage?.trim()) {
                 requestBody.systemMessage = systemMessage.trim()
             }
 
-            // CHANGE FROM axios.get TO axios.post
             const response = await axios.post(
                 "http://localhost:8080/api/chat",
-                requestBody,  // This is the body (2nd parameter for POST)
+                requestBody,
                 {
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 }
             )
+
+            console.log("Full backend response:", response.data)
+            console.log("Chart data from backend:", response.data.chartData)
+            console.log("Chart type from backend:", response.data.chartType)
 
             const aiMessage = {
                 sender: "ai",
@@ -58,18 +67,23 @@ export default function ChatPanel({ setChartData, setChartType, systemMessage })
 
             setMessages(prev => [...prev, aiMessage])
 
-            // Only update chart data if present in response
-            if (response.data.chartData) {
+            // Directly set the chart data without any transformation
+            if (response.data.chartData && response.data.chartData.length > 0) {
+                console.log("Setting chart data directly:", JSON.stringify(response.data.chartData, null, 2))
                 setChartData(response.data.chartData)
+            } else {
+                console.log("No chart data in response")
+                setChartData([])
             }
+            
             if (response.data.chartType) {
+                console.log("Setting chart type:", response.data.chartType)
                 setChartType(response.data.chartType)
             }
 
         } catch (error) {
             console.error("Error details:", error.response?.data || error.message)
             
-            // Show more specific error message
             const errorMessage = error.response?.data?.message || "Something went wrong."
             
             setMessages(prev => [
