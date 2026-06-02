@@ -9,7 +9,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { TrendingUp, AlertCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 
 // Format large numbers
 const formatCurrency = (value) => {
@@ -27,18 +27,13 @@ const CustomTooltip = ({ active, payload, label }) => {
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-lg p-3 shadow-xl">
       <p className="text-white font-semibold mb-2">{label}</p>
-      {payload.map((entry, index) => (
-        <div key={index} className="flex items-center gap-2 text-sm">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
-          <span className="text-gray-300">Value:</span>
-          <span className="text-white font-medium">
-            {formatCurrency(entry.value)}
-          </span>
-        </div>
-      ))}
+      <div className="flex items-center gap-2 text-sm">
+        <div className="w-3 h-3 rounded-full bg-blue-500" />
+        <span className="text-gray-300">Profit:</span>
+        <span className="text-white font-medium">
+          {formatCurrency(payload[0].value)}
+        </span>
+      </div>
     </div>
   );
 };
@@ -58,43 +53,62 @@ export default function FinancialChart({ chartData, chartType }) {
     );
   }
 
-  // Ensure data has the correct format
+  // Format data for display
   const formattedData = chartData.map((item) => ({
     year: String(item.year),
-    value:
-      Number(item.value) || Number(item.profit) || Number(item.revenue) || 0,
+    profit: Number(item.profit) || Number(item.value) || 0,
   }));
 
-  console.log("Rendering chart with data:", formattedData);
-  console.log("Chart type:", chartType);
+  console.log("Rendering chart:", { formattedData, chartType });
 
-  // Calculate trend for insights
-  const values = formattedData.map((d) => d.value);
-  const trend = values[values.length - 1] > values[0] ? "upward" : "downward";
+  // Calculate trend
+  const values = formattedData.map((d) => d.profit);
+  const firstValue = values[0];
+  const lastValue = values[values.length - 1];
+  const trend = lastValue > firstValue ? "upward" : "downward";
+  const percentChange = (((lastValue - firstValue) / firstValue) * 100).toFixed(
+    1,
+  );
+
   const maxValue = Math.max(...values);
-  const maxYear = formattedData.find((d) => d.value === maxValue)?.year;
+  const maxYear = formattedData.find((d) => d.profit === maxValue)?.year;
+  const minValue = Math.min(...values);
+  const minYear = formattedData.find((d) => d.profit === minValue)?.year;
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Chart Header */}
+      {/* Chart Header with detailed insights */}
       <div className="flex justify-between items-start mb-4 pb-2 border-b border-gray-100">
         <div>
           <h3 className="text-sm font-semibold text-gray-700">
             Financial Performance
           </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <TrendingUp
-              className={`w-4 h-4 ${trend === "upward" ? "text-green-500" : "text-red-500"}`}
-            />
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {trend === "upward" ? (
+              <TrendingUp className="w-4 h-4 text-green-500" />
+            ) : (
+              <TrendingDown className="w-4 h-4 text-red-500" />
+            )}
+            <span className="text-xs font-medium text-gray-700">
+              {trend === "upward" ? "↑" : "↓"} {Math.abs(percentChange)}%
+              {trend === "upward" ? " growth" : " decline"}
+            </span>
             <span className="text-xs text-gray-500">
-              {trend === "upward" ? "Upward trend" : "Downward trend"}
+              {formatCurrency(firstValue)} → {formatCurrency(lastValue)}
             </span>
             {maxYear && (
-              <span className="text-xs text-gray-500">| Peak: {maxYear}</span>
+              <span className="text-xs text-gray-500">
+                | Peak: {formatCurrency(maxValue)} ({maxYear})
+              </span>
+            )}
+            {minYear && minValue !== maxValue && (
+              <span className="text-xs text-gray-500">
+                | Low: {formatCurrency(minValue)} ({minYear})
+              </span>
             )}
           </div>
         </div>
-        <div className="rounded-full bg-slate-50 px-3 py-1 text-sm text-slate-600">
+        <div className="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
           {chartType === "bar" ? "Bar chart" : "Line chart"}
         </div>
       </div>
@@ -116,7 +130,17 @@ export default function FinancialChart({ chartData, chartType }) {
                 axisLine={{ stroke: "#e5e7eb" }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="profit"
+                fill="#3b82f6"
+                radius={[4, 4, 0, 0]}
+                label={{
+                  position: "top",
+                  formatter: (value) => formatCurrency(value),
+                  fontSize: 11,
+                  fill: "#6b7280",
+                }}
+              />
             </BarChart>
           ) : (
             <LineChart data={formattedData}>
@@ -134,11 +158,11 @@ export default function FinancialChart({ chartData, chartType }) {
               <Tooltip content={<CustomTooltip />} />
               <Line
                 type="monotone"
-                dataKey="value"
+                dataKey="profit"
                 stroke="#3b82f6"
-                strokeWidth={2.5}
-                dot={{ r: 4, fill: "white", strokeWidth: 2 }}
-                activeDot={{ r: 6 }}
+                strokeWidth={3}
+                dot={{ r: 5, fill: "#3b82f6", strokeWidth: 2 }}
+                activeDot={{ r: 7 }}
               />
             </LineChart>
           )}

@@ -71,36 +71,21 @@ export default function ChatPanel({
       setMessages((prev) => [...prev, aiMessage]);
 
       // Handle chart data - simplified
+      // Update the chart data handling section in sendMessage function
+      // Replace the existing chart data handling code with this:
+
+      // Handle chart data - simplified for backend-formatted data
       if (
         response.data.chartData &&
         Array.isArray(response.data.chartData) &&
         response.data.chartData.length > 0
       ) {
-        // Ensure data has the correct format
-        let chartDataToSet = response.data.chartData;
-
-        // If data has 'profit' or 'revenue' instead of 'value', transform it
-        if (chartDataToSet[0] && !chartDataToSet[0].hasOwnProperty("value")) {
-          const firstKey = Object.keys(chartDataToSet[0]).find(
-            (key) => key !== "year",
-          );
-          if (firstKey) {
-            chartDataToSet = chartDataToSet.map((item) => ({
-              year: item.year,
-              value: item[firstKey],
-            }));
-            console.log(
-              "Transformed data to use 'value' field:",
-              chartDataToSet,
-            );
-          }
-        }
-
+        // Backend now sends properly formatted data with "profit" field
+        const chartDataToSet = response.data.chartData;
+        console.log("Setting chart data:", chartDataToSet);
         setChartData(chartDataToSet);
         setChartType(response.data.chartType || "bar");
-        console.log("Chart updated with data:", chartDataToSet);
       } else {
-        // Clear chart if no data
         setChartData([]);
       }
     } catch (error) {
