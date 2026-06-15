@@ -68,10 +68,8 @@ export default function FileUpload() {
     const getFileIcon = (fileName, fileType) => {
         if (fileType?.startsWith("image/")) return "🖼️";
         if (fileName?.endsWith(".pdf")) return "📄";
-        if (fileName?.endsWith(".csv")) return "📊";
-        if (fileName?.endsWith(".xlsx") || fileName?.endsWith(".xls")) return "📈";
-        if (fileName?.endsWith(".doc") || fileName?.endsWith(".docx")) return "📝";
         if (fileName?.endsWith(".txt")) return "📃";
+        if (fileName?.endsWith(".html") || fileName?.endsWith(".htm")) return "🌐";
         return "📎";
     };
 
@@ -84,9 +82,9 @@ export default function FileUpload() {
 
     // List of supported file types for display
     const supportedFormats = [
-        "PDF", "DOC", "DOCX", "TXT", 
-        "CSV", "XLS", "XLSX", 
-        "JPG", "PNG", "GIF", "WEBP"
+        "PDF", "TXT",
+        "JPG", "PNG", "WEBP",
+        "HTML"
     ];
 
     return (
@@ -164,7 +162,7 @@ export default function FileUpload() {
                 type="file"
                 onChange={handleFileSelect}
                 className="hidden"
-                accept=".pdf,.doc,.docx,.txt,image/jpeg,image/png,image/gif,image/webp,.csv,.xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                accept=".pdf,.txt,image/jpeg,image/png,image/webp,.html,.htm,text/html"
             />
 
             {status && (

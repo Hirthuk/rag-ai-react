@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  Legend,
 } from "recharts";
 import { TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 
@@ -27,13 +28,15 @@ const CustomTooltip = ({ active, payload, label }) => {
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-lg p-3 shadow-xl">
       <p className="text-white font-semibold mb-2">{label}</p>
-      <div className="flex items-center gap-2 text-sm">
-        <div className="w-3 h-3 rounded-full bg-blue-500" />
-        <span className="text-gray-300">Profit:</span>
-        <span className="text-white font-medium">
-          {formatCurrency(payload[0].value)}
-        </span>
-      </div>
+      {payload.map((entry, i) =>
+        entry.value !== null ? (
+          <div key={i} className="flex items-center gap-2 text-sm mt-1">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
+            <span className="text-gray-300">{entry.name}:</span>
+            <span className="text-white font-medium">{formatCurrency(entry.value)}</span>
+          </div>
+        ) : null
+      )}
     </div>
   );
 };
@@ -57,7 +60,25 @@ export default function FinancialChart({ chartData, chartType }) {
   const formattedData = chartData.map((item) => ({
     year: String(item.year),
     profit: Number(item.profit) || Number(item.value) || 0,
+    type: item.type,
   }));
+
+  // Build two-series data when historical/forecast types are present
+  const hasTypedData = formattedData.some(
+    (d) => d.type === "historical" || d.type === "forecast"
+  );
+  const lastHistIdx = hasTypedData
+    ? formattedData.reduce((acc, d, i) => (d.type === "historical" ? i : acc), -1)
+    : -1;
+  const twoSeriesData = hasTypedData
+    ? formattedData.map((d, i) => ({
+        year: d.year,
+        Historical: d.type === "historical" ? d.profit : null,
+        // Share the last historical point in Forecast series so the lines connect
+        Forecast:
+          d.type === "forecast" ? d.profit : i === lastHistIdx ? d.profit : null,
+      }))
+    : null;
 
   console.log("Rendering chart:", { formattedData, chartType });
 
@@ -142,6 +163,44 @@ export default function FinancialChart({ chartData, chartType }) {
                 }}
               />
             </BarChart>
+          ) : hasTypedData ? (
+            // Two-series line chart: solid blue = historical, dashed amber = forecast
+            <LineChart data={twoSeriesData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="year"
+                tick={{ fill: "#6b7280", fontSize: 12 }}
+                axisLine={{ stroke: "#e5e7eb" }}
+              />
+              <YAxis
+                tickFormatter={formatCurrency}
+                tick={{ fill: "#6b7280", fontSize: 12 }}
+                axisLine={{ stroke: "#e5e7eb" }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                wrapperStyle={{ fontSize: 12, color: "#6b7280", paddingTop: 8 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="Historical"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                dot={{ r: 5, fill: "#3b82f6" }}
+                activeDot={{ r: 7 }}
+                connectNulls={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="Forecast"
+                stroke="#f59e0b"
+                strokeWidth={3}
+                strokeDasharray="6 4"
+                dot={{ r: 5, fill: "#f59e0b" }}
+                activeDot={{ r: 7 }}
+                connectNulls={false}
+              />
+            </LineChart>
           ) : (
             <LineChart data={formattedData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
