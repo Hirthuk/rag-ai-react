@@ -70,6 +70,7 @@ export default function FileUpload() {
         if (fileName?.endsWith(".pdf")) return "📄";
         if (fileName?.endsWith(".txt")) return "📃";
         if (fileName?.endsWith(".html") || fileName?.endsWith(".htm")) return "🌐";
+        if (fileName?.endsWith(".xlsx") || fileName?.endsWith(".xls")) return "📊";
         return "📎";
     };
 
@@ -84,7 +85,7 @@ export default function FileUpload() {
     const supportedFormats = [
         "PDF", "TXT",
         "JPG", "PNG", "WEBP",
-        "HTML"
+        "HTML", "XLS", "XLSX"
     ];
 
     return (
@@ -162,7 +163,7 @@ export default function FileUpload() {
                 type="file"
                 onChange={handleFileSelect}
                 className="hidden"
-                accept=".pdf,.txt,image/jpeg,image/png,image/webp,.html,.htm,text/html"
+                accept=".pdf,.txt,image/jpeg,image/png,image/webp,.html,.htm,text/html,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             />
 
             {status && (

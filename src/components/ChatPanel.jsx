@@ -12,8 +12,15 @@ const API_BASE = "http://localhost:8080";
 // event:chart frame, these functions try to pull out chart-compatible data.
 // ---------------------------------------------------------------------------
 
+// Try to fix common JSON syntax errors the backend sends, then parse.
 const safeParseJson = (str) => {
-  try { return JSON.parse(str); } catch { return null; }
+  // First attempt: as-is
+  try { return JSON.parse(str); } catch { /* fall through */ }
+  // Second attempt: clean common errors
+  const cleaned = str
+    .replace(/,(\s*[}\]])/g, "$1")   // trailing commas before } or ]
+    .replace(/(\d+)\.\s*([,}\]\s])/g, "$1.0$2"); // bare decimal: 45. → 45.0
+  try { return JSON.parse(cleaned); } catch { return null; }
 };
 
 const YEAR_RE = /^(FY)?\d{4}F?$/i;
@@ -96,22 +103,55 @@ const tryExtractChartData = (text) => {
 const countTableCols = (line) =>
   line.split("|").filter((_, i, arr) => i > 0 && i < arr.length - 1).length;
 
-// Ensure headings/lists have a blank line before them, and fix table separator
-// rows whose column count doesn't match their header (common backend bug).
+// Ensure headings/lists have a blank line before them, fix table separator
+// column count mismatches, and wrap bare JSON blocks in code fences.
 const normalizeMarkdown = (text) => {
   const normalized = text
     .replace(/\r\n/g, "\n")
     .replace(/([^\n])\n(#{1,6} )/g, "$1\n\n$2")
     .replace(/([^\n])\n([-*+] )/g, "$1\n\n$2");
 
-  const lines = normalized.split("\n");
-  const fixed = lines.map((line, i) => {
-    // Detect a GFM table separator row (contains --- and only |, -, :, space)
+  // --- Pass 1: wrap bare JSON blocks in ```json fences ---
+  // Walk line-by-line; when we see a line that opens a JSON object/array and
+  // we're not already inside a code fence, collect until braces are balanced.
+  const pass1Lines = [];
+  const rawLines = normalized.split("\n");
+  let inFence = false;
+  let i = 0;
+  while (i < rawLines.length) {
+    const line = rawLines[i];
+    if (/^```/.test(line)) { inFence = !inFence; pass1Lines.push(line); i++; continue; }
+    if (!inFence && /^\s*[\{\[]/.test(line)) {
+      // Collect lines until braces balance
+      const jsonLines = [];
+      let depth = 0;
+      let j = i;
+      while (j < rawLines.length) {
+        const l = rawLines[j];
+        depth += (l.match(/[\{\[]/g) ?? []).length;
+        depth -= (l.match(/[\}\]]/g) ?? []).length;
+        jsonLines.push(l);
+        j++;
+        if (depth <= 0) break;
+      }
+      // Only wrap if it actually parses as JSON (even after cleaning)
+      if (safeParseJson(jsonLines.join("\n")) !== null) {
+        pass1Lines.push("```json", ...jsonLines, "```");
+        i = j;
+        continue;
+      }
+    }
+    pass1Lines.push(line);
+    i++;
+  }
+
+  // --- Pass 2: fix table separator column count mismatches ---
+  const fixed = pass1Lines.map((line, idx) => {
     const isSeparator =
       line.includes("---") && /^\s*\|[\s\-:|]+\|\s*$/.test(line);
-    if (!isSeparator || i === 0) return line;
+    if (!isSeparator || idx === 0) return line;
 
-    const prevLine = lines[i - 1];
+    const prevLine = pass1Lines[idx - 1];
     if (!prevLine?.trim().startsWith("|")) return line;
 
     const headerCols = countTableCols(prevLine);
@@ -165,16 +205,21 @@ const mdComponents = {
   ),
   code: ({ className, children }) => {
     const isBlock = /language-/.test(className || "");
-    return isBlock ? (
-      <code className="font-mono text-xs">{children}</code>
-    ) : (
+    if (isBlock) {
+      // Pretty-print if the content is valid JSON
+      const raw = String(children).trim();
+      const parsed = safeParseJson(raw);
+      const display = parsed !== null ? JSON.stringify(parsed, null, 2) : raw;
+      return <code className="font-mono text-xs whitespace-pre">{display}</code>;
+    }
+    return (
       <code className="bg-slate-200 text-slate-700 rounded px-1 py-0.5 text-xs font-mono">
         {children}
       </code>
     );
   },
   pre: ({ children }) => (
-    <pre className="bg-slate-100 rounded-lg p-3 overflow-x-auto text-xs font-mono mb-3">
+    <pre className="bg-slate-800 text-slate-100 rounded-lg p-4 overflow-x-auto text-xs font-mono mb-3 leading-5">
       {children}
     </pre>
   ),
