@@ -1,7 +1,9 @@
 import { useState, useRef } from "react";
 import { api } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function FileUpload() {
+    const { user } = useAuth();
     const [status, setStatus] = useState("");
     const [uploading, setUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
@@ -32,6 +34,7 @@ export default function FileUpload() {
 
         const formData = new FormData();
         formData.append("file", file);
+        if (user?.email) formData.append("userName", user.email);
         setUploading(true);
         setStatus(`Uploading ${file.name}...`);
 
