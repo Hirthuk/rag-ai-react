@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import axios from "axios";
+import { api } from "../services/api";
 
 export default function FileUpload() {
     const [status, setStatus] = useState("");
@@ -36,10 +36,8 @@ export default function FileUpload() {
         setStatus(`Uploading ${file.name}...`);
 
         try {
-            await axios.post("http://localhost:8080/api/upload", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data"
-                }
+            await api.post("/api/upload", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
             });
 
             setStatus("✅ File uploaded and processed successfully.");

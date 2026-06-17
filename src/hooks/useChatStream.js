@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 
-const API_BASE = "http://localhost:8080";
+import { API_BASE } from "../services/api";
 
 export function useChatStream() {
   const [streamingText, setStreamingText] = useState("");
@@ -27,11 +27,13 @@ export function useChatStream() {
     setIsStreaming(true);
 
     try {
+      const token = localStorage.getItem("accessToken");
       const response = await fetch(`${API_BASE}/api/chat/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Accept": "text/event-stream",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ conversationId, userMessage, systemMessage }),
         signal: controller.signal,

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
+import { api } from "../services/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useChatStream } from "../hooks/useChatStream";
 
-const API_BASE = "http://localhost:8080";
+import { API_BASE } from "../services/api";
 
 // ---------------------------------------------------------------------------
 // Chart extraction fallback
@@ -338,7 +338,7 @@ export default function ChatPanel({ setChartData, setChartType, systemMessage })
       const requestBody = { userMessage: text, conversationId: convId };
       if (systemMessage?.trim()) requestBody.systemMessage = systemMessage.trim();
 
-      const response = await axios.post(`${API_BASE}/api/chat`, requestBody, {
+      const response = await api.post("/api/chat", requestBody, {
         headers: { "Content-Type": "application/json" },
       });
 

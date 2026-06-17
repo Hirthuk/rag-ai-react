@@ -1,12 +1,21 @@
 import { useState } from "react";
-
+import { useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import ChatPanel from "../components/ChatPanel";
 import FinancialChart from "../charts/FinancialChart";
 import FileUpload from "../components/FileUpload";
 
 export default function Dashboard() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [chartData, setChartData] = useState([]);
   const [chartType, setChartType] = useState("line");
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
+  };
   const [systemMessage, setSystemMessage] = useState("");
   const [systemDraft, setSystemDraft] = useState("");
   const [showSystemInput, setShowSystemInput] = useState(false);
@@ -36,13 +45,25 @@ export default function Dashboard() {
                 Financial RAG based AI
               </h1>
             </div>
-            <div className="flex flex-wrap gap-3 text-sm">
+            <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1 font-medium text-sky-700">
                 Enterprise-ready
               </span>
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1 font-medium text-slate-600">
                 Live analysis
               </span>
+              {user && (
+                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 font-medium text-slate-500">
+                  {user.email}
+                </span>
+              )}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 rounded-full border border-rose-100 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-100"
+              >
+                <LogOut size={13} />
+                Sign out
+              </button>
             </div>
           </div>
         </header>
