@@ -29,12 +29,29 @@ const COGNITO_MESSAGES = {
     "This email is already linked to another account.",
 };
 
+// Spring Boot 3.x omits the exception reason by default — these placeholders
+// are not useful to show to the user.
+const GENERIC_PLACEHOLDERS = new Set(["No message available", "No message", ""]);
+
+// Friendly fallbacks keyed by HTTP status — used when the backend doesn't echo
+// the exception reason in the response body (Spring Boot default behaviour).
+const STATUS_FALLBACKS = {
+  400: "Invalid request. Please check your input.",
+  401: "Incorrect email or password.",
+  403: "Your account is not confirmed yet. Please check your email.",
+  404: "No account found with this email address.",
+  409: "An account with this email already exists. Try signing in instead.",
+  429: "Too many attempts. Please wait a few minutes and try again.",
+  500: "Server error. Please try again later.",
+};
+
 /**
  * Extract a friendly message from an axios error coming from the backend.
  * Falls back to `fallback` when nothing useful can be derived.
  */
 export const getAuthErrorMessage = (error, fallback = "Something went wrong. Please try again.") => {
   const data = error?.response?.data;
+  const status = error?.response?.status;
 
   // 1. Backend echoes Cognito's exception name in a known field
   const exceptionName =
@@ -46,13 +63,24 @@ export const getAuthErrorMessage = (error, fallback = "Something went wrong. Ple
   }
 
   // 2. Backend forwards Cognito's message string that contains the class name
-  const rawMsg = data?.message || error?.message || "";
+  const backendMsg = data?.message ?? "";
   for (const [key, friendly] of Object.entries(COGNITO_MESSAGES)) {
-    if (rawMsg.includes(key)) return friendly;
+    if (backendMsg.includes(key)) return friendly;
   }
 
-  // 3. Backend sent a plain human-readable message — use it directly
-  if (rawMsg && rawMsg.length < 200) return rawMsg;
+  // 3. Backend sent a real, specific message (not Spring Boot's generic placeholder).
+  //    Never read error?.message here — that's axios's internal string like
+  //    "Request failed with status code 401", which is not user-facing.
+  if (backendMsg && !GENERIC_PLACEHOLDERS.has(backendMsg.trim()) && backendMsg.length < 200) {
+    return backendMsg;
+  }
+
+  // 4. No useful message in the body — map the HTTP status to a friendly string.
+  //    This covers Spring Boot's default where the exception reason is not
+  //    included in the response (requires server.error.include-message=always).
+  if (status && STATUS_FALLBACKS[status]) {
+    return STATUS_FALLBACKS[status];
+  }
 
   return fallback;
 };
